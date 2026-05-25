@@ -1,0 +1,18 @@
+sources:
+  demo_logs:
+    type: demo_logs
+    format: apache_common
+    interval: 1
+
+sinks:
+  clickhouse:
+    type: clickhouse
+    inputs:
+      - demo_logs
+    compression: gzip
+    database: logs
+    table: vector_logs
+    endpoint: http://{{ clickhouse_host }}:8123
+    encoding:
+      timestamp_format: unix
+    skip_unknown_fields: true
