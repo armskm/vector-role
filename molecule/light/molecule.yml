@@ -8,11 +8,11 @@ lint: |
   yamllint .
   ansible-lint .
 platforms:
-  - name: oraclelinux8
-    image: oraclelinux:8
+  - name: centos8
+    image: centos:8
     pre_build_image: true
   - name: ubuntu
-    image: jrei/systemd-ubuntu:latest
+    image: docker.io/pycontribs/ubuntu:latest
     pre_build_image: true
 provisioner:
   name: ansible
