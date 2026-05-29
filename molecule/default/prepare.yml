@@ -1,0 +1,8 @@
+---
+- name: Prepare
+  hosts: ubuntu
+  gather_facts: false
+  tasks:
+    - name: Install Python on Debian/Ubuntu
+      raw: apt-get update && apt-get install -y python3
+      changed_when: false

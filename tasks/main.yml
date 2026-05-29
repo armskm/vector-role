@@ -1,37 +1,48 @@
 ---
-- name: Get vector distrib
-  ansible.builtin.get_url:
-    url: "https://packages.timber.io/vector/{{ vector_version }}/vector_{{ vector_version }}-1_amd64.deb"
-    dest: "/tmp/vector-{{ vector_version }}.deb"
-    mode: '0644'
-  tags:
-    - vector
-    - distr
+- name: Install sudo packages dnf
+  ansible.builtin.dnf:
+    name: sudo
+  when: ansible_facts['pkg_mgr'] == 'dnf'
 
-- name: Update apt cache
+- name: Install sudo packages for Ubuntu
   ansible.builtin.apt:
-    update_cache: true
+    name: sudo
+  when: ansible_facts['pkg_mgr'] == 'apt'
 
-- name: Install vector
-  ansible.builtin.command:
-    cmd: "dpkg -i /tmp/vector-{{ vector_version }}.deb"
-  changed_when: false
-  tags:
-    - vector
-    - distr
+- name: Get Vector distrib rpm
+  ansible.builtin.get_url:
+    url: "https://packages.timber.io/vector/{{ vector_version }}/vector-{{ vector_version }}-1.{{ ansible_architecture }}.rpm"
+    dest: "./vector-{{ vector_version }}.{{ ansible_architecture }}.rpm"
+    mode: "0755"
+    validate_certs: false
+  when: ansible_facts['pkg_mgr'] == 'dnf'
+- name: Install vector packages
+  become: true
+  block:
+    - name: Install Vector packages dnf
+      ansible.builtin.dnf:
+        name:
+          - "vector-{{ vector_version }}.{{ ansible_architecture }}.rpm"
+        disable_gpg_check: yes
+      when: ansible_facts['pkg_mgr'] == 'dnf'
 
-- name: Deploy vector configuration
+    - name: Get distr for Ubuntu
+      ansible.builtin.get_url:
+        url: "https://packages.timber.io/vector/{{ vector_version }}/vector_{{ vector_version }}-1_amd64.deb"
+        dest: "./vector-{{ vector_version }}.deb"
+        mode: '0644'
+      when: ansible_facts['pkg_mgr'] == 'apt'
+
+    - name: Install vector for Ubuntu
+      ansible.builtin.command:
+        cmd: "dpkg -i ./vector-{{ vector_version }}.deb"
+      changed_when: false
+      when: ansible_facts['pkg_mgr'] == 'apt'
+
+- name: Deploy config Vector
+  become: true
   ansible.builtin.template:
-    src: templates/vector.yaml.j2
-    dest: "{{ vector_config_path }}"
-    mode: '0644'
-  notify: Start Vector service
-  tags:
-    - vector
-    - config
-
-- name: Flush handlers
-  ansible.builtin.meta: flush_handlers
-  tags:
-    - vector
-    - restart service
+    src: vector.yaml.j2
+    dest: /etc/vector/vector.yml
+    mode: "0755"
+  notify: Restart Vector service

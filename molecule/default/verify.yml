@@ -1,0 +1,25 @@
+- name: Verify
+  hosts: all
+  tasks:
+    - name: Check vector service is running
+      ansible.builtin.systemd:
+        name: vector.service
+      register: svc
+
+    - name: Assert service is running
+      ansible.builtin.assert:
+        that: svc.status.ActiveState == "active"
+        fail_msg: "Vector service not running"
+        success_msg: "Vector service is running"
+
+    - name: Check config contains clickhouse
+      ansible.builtin.shell: grep -q clickhouse /etc/vector/vector.yml
+      changed_when: false
+      register: config_grep
+      failed_when: false
+
+    - name: Assert config contains clickhouse
+      ansible.builtin.assert:
+        that: config_grep.rc == 0
+        fail_msg: "Config does not contain clickhouse"
+        success_msg: "Config contains clickhouse"
